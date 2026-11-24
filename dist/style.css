@@ -226,3 +226,10 @@ dialog::backdrop{background:#241b2fa6}
 .design-gallery .dialog-art{aspect-ratio:1;max-width:28rem;margin-inline:auto;border-radius:12px}
 .design-views{margin:10px 0 14px;justify-content:center}
 .design-views button{min-height:44px}
+
+.art.silhouettes{background-image:url(catalog-silhouettes.jpg);background-size:200% 200%}
+.design-filters{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 17px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.design-filters label{flex:1;min-width:120px;max-width:260px}
+.design-feature-details{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;padding:10px 12px;border-radius:9px;background:var(--wash)}
+.design-feature-details dt{color:var(--muted);font-size:.85rem}.design-feature-details dd{margin:3px 0 0;font-weight:700}
+.design-style-inputs.fields{margin:0}

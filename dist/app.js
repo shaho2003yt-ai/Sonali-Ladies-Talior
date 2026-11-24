@@ -55,6 +55,49 @@ designs.push(...[
   sheet:'views-'+Math.floor(index/2),position:'0% '+(index%2?'100%':'0%'),
   photoRow:index%2?'100%':'0%'
 })));
+designs.push(...[
+  ['Plum V-Neck Straight Dress','Women','V-neck and a straight skirt with minimal flare.','0% 0%'],
+  ['Sky Blue Square-Neck A-Line Gown','Women','Square neckline with a gently flared hem.','100% 0%'],
+  ['Rose Round-Neck Full-Flare Anarkali','Girls','Round neckline and a wide circular skirt.','0% 100%'],
+  ['Ivory Sweetheart Tiered Frock','Girls','Sweetheart neckline and gathered tiers.','100% 100%']
+].map(([name,audience,notes,position],index)=>({id:'silhouette-'+index,name,category:'Dresses',audience,notes,position,sheet:'silhouettes'})));
+const designGroups = {Dresses:['Neckline','Skirt shape'],Blouses:['Neckline','Back style'],Maggam:['Motif','Embellishment'],Embroidery:['Technique','Placement']};
+const designTraits = {"sample-0":["Round neck","Full flare"],
+  "sample-1":["Split neck","Straight cut"],
+  "sample-2":["Sweetheart neck",""],
+  "sample-3":["High neck",""],
+  "sample-4":["Bridal floral","Zari and beads"],
+  "sample-5":["Floral threadwork","Neck and sleeves"],
+  "girls-0":["","Tiered skirt"],
+  "girls-1":["Round neck",""],
+  "girls-2":["Leaf","Zari and beads"],
+  "girls-3":["Floral threadwork","Body"],
+  "variety-0":["Scoop neck","A-line"],
+  "variety-1":["Round neck","Sharara set"],
+  "variety-2":["V-neck","Full flare"],
+  "variety-3":["Square neck",""],
+  "variety-4":["","Dori tie"],
+  "variety-5":["Peacock","Zari and beads"],
+  "variety-6":["Mirror work","Body and sleeves"],
+  "variety-7":["Square neck","Gathered skirt"],
+  "variety-8":["Round neck","Pavadai set"],
+  "variety-9":["Lotus","Zari and beads"],
+  "variety-10":["Floral threadwork","Bodice and skirt"],
+  "variety-11":["Floral threadwork","Sleeves"],
+  "variety-12":["Scalloped border","Pearls"],
+  "views-0":["Round neck","Full flare"],
+  "views-1":["Round neck","Tiered skirt"],
+  "views-2":["Square neck","Keyhole"],
+  "views-3":["Square neck","Dori tie"],
+  "views-4":["Paisley","Zari and beads"],
+  "views-5":["Lotus threadwork","Body and sleeves"],
+  "views-6":["Floral","Gold beads"],
+  "views-7":["Floral threadwork","Neck and sleeves"],
+  "silhouette-0":["V-neck","Straight cut"],
+  "silhouette-1":["Square neck","A-line"],
+  "silhouette-2":["Round neck","Full flare"],
+  "silhouette-3":["Sweetheart neck","Tiered skirt"]};
+const featuresOf = design => Object.hasOwn(designTraits,design.id)?designTraits[design.id]:[design.styleType||'',design.styleDetail||''];
 const audiences = ['Women','Girls'];
 const audienceOf = record => record.audience || 'Women';
 const sizes = ['Chest / bust','Waist','Hip','Shoulder','Armhole','Sleeve length','Sleeve round','Front neck depth','Back neck depth','Blouse length','Dress length','Skirt length'];
@@ -85,6 +128,7 @@ const orderRows = list => list.map(o=>[esc(o.number),esc(customer(o.customer)?.n
 const orderTable = list => table(['Order','Customer','Garment','Due date','Status','Balance',''],orderRows(list),'No orders to show.');
 const names = {overview:'Overview',orders:'Orders',designs:'Design catalog',customers:'Customers',contact:'Shop contact',backup:'Backup & Restore'};
 let category = 'All designs';
+let designFilters = ['',''];
 let audience = '';
 let query = '';
 let activePage = '';
@@ -98,7 +142,7 @@ function render() {
   const [route, customerId] = hash.split('/');
   const page = route==='measurements' ? 'customers' : Object.hasOwn(names,route) ? route : 'overview';
   if(hash!==activeRoute || page!==activePage){
-    query='';category='All designs';audience='';
+    query='';category='All designs';audience='';designFilters=['',''];
     orderView=page==='orders'&&orderViews.some(([value])=>value===customerId)?customerId:'open';
     activeRoute=hash;activePage=page;
   }
@@ -121,8 +165,9 @@ function render() {
     return;
   }
   if(page==='designs'){
-    main.innerHTML=heading('Design catalog','Browse designs for women and girls and add photos of your shop’s work.',button('＋ Add design','design'))+
-      '<div class="toolbar">'+search('Search designs')+'<select id="audience-filter" aria-label="Filter by wearer" style="width:auto">'+option('','Women & girls',audience)+audiences.map(group=>option(group,group,audience)).join('')+'</select></div><div class="chips" aria-label="Design categories">'+['All designs',...categories].map(c=>'<button data-category="'+c+'" aria-pressed="'+(c===category)+'" class="'+(c===category?'':'secondary')+'">'+c+'</button>').join('')+'</div><div id="results"></div>';
+    main.innerHTML=heading('Design catalog','Choose a category to see its neckline, shape, or handwork filters.',button('＋ Add design','design'))+
+      '<div class="toolbar">'+search('Search designs')+'<select id="audience-filter" aria-label="Filter by wearer" style="width:auto">'+option('','Women & girls',audience)+audiences.map(group=>option(group,group,audience)).join('')+'</select></div><div class="chips" aria-label="Design categories">'+['All designs',...categories].map(c=>'<button data-category="'+c+'" aria-pressed="'+(c===category)+'" class="'+(c===category?'':'secondary')+'">'+c+'</button>').join('')+'</div><div id="design-filters"></div><div id="results"></div>';
+    renderDesignFilters();
   }
   if(page==='orders'){
     main.innerHTML=heading('Orders','Find orders by customer name, phone number, or order number.')+
@@ -199,11 +244,32 @@ function designGallery(design){
       '<button type="button" class="'+(index?'secondary':'')+'" data-photo-view="'+index+'" data-id="'+design.id+'" aria-pressed="'+(index===0)+'" aria-controls="design-photo">'+label+'</button>'
     ).join('')+'</div></div>';
 }
+function renderDesignFilters(){
+  const target=document.querySelector('#design-filters');
+  const labels=designGroups[category];
+  target.innerHTML=labels?'<div class="design-filters">'+labels.map((label,index)=>{
+    const values=[...new Set(catalog().filter(d=>d.category===category).map(d=>featuresOf(d)[index]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    return '<label>'+label+'<select data-design-filter="'+index+'">'+option('','Any '+label.toLowerCase(),designFilters[index])+
+      values.map(value=>option(value,value,designFilters[index])).join('')+'</select></label>';
+  }).join('')+'</div>':'';
+}
+function designStyleInputs(group,record){
+  const labels=designGroups[group];
+  return input(labels[0]+' (optional)','styleType','text',record.styleType,'maxlength="60"')+
+    input(labels[1]+' (optional)','styleDetail','text',record.styleDetail,'maxlength="60"');
+}
+function designFeatureDetails(design){
+  const labels=designGroups[design.category];
+  if(!labels)return '';
+  const values=featuresOf(design);
+  const rows=labels.map((label,index)=>values[index]?'<div><dt>'+label+'</dt><dd>'+esc(values[index])+'</dd></div>':'').join('');
+  return rows?'<dl class="design-feature-details">'+rows+'</dl>':'';
+}
 function renderResults(){
   const target=document.querySelector('#results');
   if(!target)return;
   if(activePage==='designs'){
-    const list=catalog().filter(d=>(category==='All designs'||d.category===category)&&(!audience||audienceOf(d)===audience)&&matches(d.name,d.category,d.notes,audienceOf(d)));
+    const list=catalog().filter(d=>(category==='All designs'||d.category===category)&&(!audience||audienceOf(d)===audience)&&designFilters.every((value,index)=>!value||featuresOf(d)[index]===value)&&matches(d.name,d.category,d.notes,audienceOf(d),...featuresOf(d)));
     target.innerHTML='<p class="result-count" role="status">'+list.length+(list.length===1?' design':' designs')+'</p>'+designCards(list);
   }
   if(activePage==='orders'){
@@ -266,7 +332,7 @@ const backupFields = {
   orders:['id','number','customer','garment','audience','wearerName','design','due','fitting','status','notes','total','advance'],
   customers:['id','name','phone','notes'],
   measurements:['id','customer','garment','audience','wearerName','date','unit','notes',...sizes.map((_,i)=>'size'+i)],
-  designs:['id','name','category','audience','notes','photo']
+  designs:['id','name','category','audience','notes','photo','styleType','styleDetail']
 };
 function parseBackup(text){
   const backup=JSON.parse(text);
@@ -421,11 +487,15 @@ function edit(kind,id='',prefill={}){
     input('Measured on','date','date',r.date||today(),'required')+select('Unit','unit',['in','cm'].map(u=>option(u,u==='in'?'Inches':'Centimetres',r.unit)).join(''))+
     sizes.map((size,i)=>input(size,'size'+i,'number',r['size'+i],'min="0.01" step="any"')).join('')+notes('Fit and extra measurements',r.notes);
   if(kind==='design')fields=input('Design name','name','text',r.name,'required maxlength="100"')+wearer(r)+select('Category','category',categories.map(c=>option(c,c,r.category)).join(''))+
+    '<div class="wide design-style-inputs fields">'+designStyleInputs(r.category||categories[0],r)+'</div>'+
     '<label class="wide">Design photo<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" '+(record?'':'required')+'></label>'+notes('Design details',r.notes);
   const label=kind==='measurement'?'measurements':kind;
   showDialog((record?'Edit ':kind==='measurement'?'Add ':'New ')+label,
     '<form id="editor">'+(kind==='measurement'?'<p class="measurement-customer">Customer: '+esc(customer(r.customer).name)+'</p>':'')+'<div class="fields">'+fields+'</div><p class="error" role="alert"></p><div class="actions"><button type="submit">Save '+label+'</button>'+button('Cancel','close','',true)+'</div></form>');
   const form=body.querySelector('form');
+  if(kind==='design')form.elements.category.onchange=()=>{
+    form.querySelector('.design-style-inputs').innerHTML=designStyleInputs(form.elements.category.value,{});
+  };
   if(kind==='order'){
     const {customer:customerInput,audience:wearerInput,design,total,advance}=form.elements;
     const newCustomer=form.querySelector('.order-new-customer');
@@ -533,12 +603,14 @@ document.addEventListener('click',event=>{
     return;
   }
   if(control.dataset.category){
+    if(category!==control.dataset.category)designFilters=['',''];
     category=control.dataset.category;
     document.querySelectorAll('[data-category]').forEach(chip=>{
       const chosen=chip.dataset.category===category;
       chip.setAttribute('aria-pressed',String(chosen));
       chip.classList.toggle('secondary',!chosen);
     });
+    renderDesignFilters();
     renderResults();
     return;
   }
@@ -552,7 +624,7 @@ document.addEventListener('click',event=>{
   if(action==='measure-for')edit('measurement','',{customer:id});
   if(action==='view-design'){
     const d=catalog().find(item=>item.id===id);
-    if(d)showDialog(esc(d.name),designGallery(d)+'<p>'+esc(d.category)+' &middot; '+audienceOf(d)+(d.position?' · Reference design':'')+'</p><p>'+esc(d.notes)+'</p><div class="actions dialog-actions">'+button('Use in order','design-order',d.id)+(d.photo?button('Edit design','design',d.id,true):'')+'</div>');
+    if(d)showDialog(esc(d.name),designGallery(d)+'<p>'+esc(d.category)+' &middot; '+audienceOf(d)+(d.position?' · Reference design':'')+'</p><p>'+esc(d.notes)+'</p>'+designFeatureDetails(d)+'<div class="actions dialog-actions">'+button('Use in order','design-order',d.id)+(d.photo?button('Edit design','design',d.id,true):'')+'</div>');
   }
   if(action==='design-order'){
     const d=catalog().find(item=>item.id===id);
@@ -560,6 +632,12 @@ document.addEventListener('click',event=>{
   }
 });
 document.addEventListener('input',event=>{if(event.target.id==='search'){query=event.target.value;renderResults();}});
+document.addEventListener('change',event=>{
+  if(event.target.matches('[data-design-filter]')){
+    designFilters[Number(event.target.dataset.designFilter)]=event.target.value;
+    renderResults();
+  }
+});
 document.addEventListener('change',event=>{if(event.target.id==='audience-filter'){audience=event.target.value;renderResults();}});
 function measurementJumpTarget(){
   return /^#customers\/[^/]+\/measurements$/.test(location.hash)?document.querySelector('#customer-measurements'):null;
