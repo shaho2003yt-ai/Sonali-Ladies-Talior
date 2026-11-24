@@ -233,3 +233,13 @@ dialog::backdrop{background:#241b2fa6}
 .design-feature-details{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;padding:10px 12px;border-radius:9px;background:var(--wash)}
 .design-feature-details dt{color:var(--muted);font-size:.85rem}.design-feature-details dd{margin:3px 0 0;font-weight:700}
 .design-style-inputs.fields{margin:0}
+
+.public-site{display:block}
+.public-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px clamp(16px,5vw,56px);background:var(--studio);color:white}
+.public-header .brand{padding:0}
+.public-header nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.public-header nav a{display:block;color:#f5e9f0;padding:8px 10px;border-radius:7px;font-weight:700}
+.public-header nav a[aria-current],.public-header nav a:hover{background:#ffffff20;color:white}
+.public-hero .hero-copy h1{font-family:"Playfair Display",Georgia,serif;font-size:clamp(2rem,4vw,3.2rem);line-height:1.09;letter-spacing:-.025em}
+.public-site main{max-width:1320px}
+@media(max-width:460px){.public-header .brand{font-size:22px}.public-header .brand .mark{width:34px;height:34px;font-size:19px}.public-header nav a{font-size:.83rem;padding:6px 7px}.public-header .subbrand{font-size:.55rem}}

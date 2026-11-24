@@ -26,13 +26,21 @@ jobs:
         with:
           persist-credentials: false
       - name: Check application script
-        run: node --check dist/app.js
+        run: |
+          node --check dist/app.js
+          node --check dist/catalog.js
+          node --check public/visitor.js
+      - name: Prepare visitor-only site
+        run: |
+          mkdir pages
+          cp public/index.html public/visitor.js dist/catalog.js dist/style.css pages/
+          cp dist/*.jpg dist/*.png pages/
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site files
         uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: pages
       - name: Publish site
         id: deployment
         uses: actions/deploy-pages@v4
