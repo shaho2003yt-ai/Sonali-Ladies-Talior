@@ -40,6 +40,21 @@ designs.push(...[
 ].map(([name,category,notes,audience,position],index)=>({
   id:'variety-'+index,name,category,notes,audience,position,sheet:index<9?'variety-nine':'variety-four'
 })));
+const photoViews = ['Front','Back','Close-up'];
+designs.push(...[
+  ['Ivory Cape Anarkali','Dresses','Women','Full-length Anarkali with cape sleeves and berry embroidery.'],
+  ['Peach Bow Frock','Dresses','Girls','Tiered skirt, puff sleeves and a bow at the back.'],
+  ['Royal Blue Keyhole Blouse','Blouses','Women','Square front neckline, elbow sleeves and a keyhole back.'],
+  ['Emerald Tie-Back Pavadai Blouse','Blouses','Girls','Short sleeves, gold piping and a back tie.'],
+  ['Wine Paisley Bridal Maggam','Maggam','Women','Paisley beadwork with a gold sleeve border.'],
+  ['Yellow Lotus Kurta','Embroidery','Girls','Yellow silk kurta with lotus motifs and blue thread accents.'],
+  ['Violet Floral Maggam Blouse','Maggam','Girls','Silk blouse with gold floral beads and a tie-back.'],
+  ['Teal Floral Threadwork Blouse','Embroidery','Women','Floral threadwork on the sleeves and back neckline.']
+].map(([name,category,audience,notes],index)=>({
+  id:'views-'+index,name,category,audience,notes,
+  sheet:'views-'+Math.floor(index/2),position:'0% '+(index%2?'100%':'0%'),
+  photoRow:index%2?'100%':'0%'
+})));
 const audiences = ['Women','Girls'];
 const audienceOf = record => record.audience || 'Women';
 const sizes = ['Chest / bust','Waist','Hip','Shoulder','Armhole','Sleeve length','Sleeve round','Front neck depth','Back neck depth','Blouse length','Dress length','Skirt length'];
@@ -53,7 +68,7 @@ const catalog = () => [...designs,...data.designs];
 const button = (label,action,id='',secondary=false) => '<button type="button" class="'+(secondary?'secondary':'')+'" data-action="'+action+'" data-id="'+esc(id)+'">'+label+'</button>';
 const heading = (title,desc,action='') => '<div class="heading"><div><h1>'+title+'</h1><p>'+desc+'</p></div>'+action+'</div>';
 const table = (heads,rows,empty) => '<div class="panel table">'+(rows.length ? '<table><thead><tr>'+heads.map(h=>'<th scope="col">'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(cell=>'<td>'+cell+'</td>').join('')+'</tr>').join('')+'</tbody></table>' : '<div class="empty">'+empty+'</div>')+'</div>';
-const art = (design,large=false) => '<div class="art '+(large?'dialog-art ':'')+(design.sheet?design.sheet+' ':design.position&&audienceOf(design)==='Girls'?'girls-art ':'')+(design.photo?'upload':'')+'" '+(design.position?'style="background-position:'+design.position+'" role="img" aria-label="'+esc(design.name)+'"':'')+'>'+(design.photo?'<img src="'+esc(design.photo)+'" alt="'+esc(design.name)+'">':'')+'</div>';
+const art = (design,large=false,description=design.name) => '<div class="art '+(large?'dialog-art ':'')+(design.sheet?design.sheet+' ':design.position&&audienceOf(design)==='Girls'?'girls-art ':'')+(design.photo?'upload':'')+'" '+(design.position?'style="background-position:'+design.position+'" role="img" aria-label="'+esc(description)+'"':'')+'>'+(design.photo?'<img src="'+esc(design.photo)+'" alt="'+esc(design.name)+'">':'')+'</div>';
 const designCards = list => list.length ? '<div class="grid">'+list.map(d=>'<article class="card"><div class="card-image">'+art(d)+'</div>'+'<div class="card-body"><small>'+esc(d.category)+' &middot; '+audienceOf(d)+(d.position?' · Reference design':'')+'</small><h3>'+esc(d.name)+'</h3>'+button('View design','view-design',d.id,true)+'</div></article>').join('')+'</div>' : '<div class="panel empty">No matching designs.</div>';
 function orderDue(order){
   const date=dateLabel(order.due);
@@ -171,6 +186,18 @@ function changeOrderStatus(id){
   renderResults();
   document.querySelector('[data-order-view][aria-pressed="true"]')?.focus();
   notify(nextStatus==='Ready'?'Order marked ready for pickup.':'Order marked delivered.');
+}
+function designPhoto(design,index=0){
+  if(!design.photoRow)return art(design,true);
+  const position=(index*50)+'% '+design.photoRow;
+  return art({...design,position},true,design.name+' - '+photoViews[index]);
+}
+function designGallery(design){
+  if(!design.photoRow)return art(design,true);
+  return '<div class="design-gallery"><div id="design-photo">'+designPhoto(design)+'</div>'+
+    '<div class="chips design-views" aria-label="Design photo views">'+photoViews.map((label,index)=>
+      '<button type="button" class="'+(index?'secondary':'')+'" data-photo-view="'+index+'" data-id="'+design.id+'" aria-pressed="'+(index===0)+'" aria-controls="design-photo">'+label+'</button>'
+    ).join('')+'</div></div>';
 }
 function renderResults(){
   const target=document.querySelector('#results');
@@ -480,8 +507,21 @@ function notify(message){
 }
 document.querySelector('[data-skip-link]').onclick=event=>{event.preventDefault();main.focus();};
 document.addEventListener('click',event=>{
-  const control=event.target.closest('button[data-action],button[data-category],button[data-order-view]');
+  const control=event.target.closest('button[data-action],button[data-category],button[data-order-view],button[data-photo-view]');
   if(!control)return;
+  if(control.dataset.photoView!==undefined){
+    const design=designs.find(item=>item.id===control.dataset.id);
+    const index=Number(control.dataset.photoView);
+    const photo=document.querySelector('#design-photo');
+    if(!design?.photoRow||!photo||!photoViews[index])return;
+    photo.innerHTML=designPhoto(design,index);
+    dialog.querySelectorAll('[data-photo-view]').forEach(button=>{
+      const selected=button===control;
+      button.setAttribute('aria-pressed',String(selected));
+      button.classList.toggle('secondary',!selected);
+    });
+    return;
+  }
   if(control.dataset.orderView){
     orderView=control.dataset.orderView;
     document.querySelectorAll('[data-order-view]').forEach(chip=>{
@@ -512,7 +552,7 @@ document.addEventListener('click',event=>{
   if(action==='measure-for')edit('measurement','',{customer:id});
   if(action==='view-design'){
     const d=catalog().find(item=>item.id===id);
-    if(d)showDialog(esc(d.name),art(d,true)+'<p>'+esc(d.category)+' &middot; '+audienceOf(d)+(d.position?' · Reference design':'')+'</p><p>'+esc(d.notes)+'</p><div class="actions dialog-actions">'+button('Use in order','design-order',d.id)+(d.photo?button('Edit design','design',d.id,true):'')+'</div>');
+    if(d)showDialog(esc(d.name),designGallery(d)+'<p>'+esc(d.category)+' &middot; '+audienceOf(d)+(d.position?' · Reference design':'')+'</p><p>'+esc(d.notes)+'</p><div class="actions dialog-actions">'+button('Use in order','design-order',d.id)+(d.photo?button('Edit design','design',d.id,true):'')+'</div>');
   }
   if(action==='design-order'){
     const d=catalog().find(item=>item.id===id);
